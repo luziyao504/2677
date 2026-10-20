@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理后台 · 少女の导航站</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { padding-bottom: 60px; }
+
+    .admin-wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 28px 20px;
+    }
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .admin-header h1 {
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .admin-header .links { display: flex; gap: 10px; align-items: center; }
+    .admin-header a, .admin-header button {
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1.5px solid var(--color-border);
+      background: rgba(255, 255, 255, 0.75);
+      color: var(--color-periwinkle);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .25s ease;
+    }
+    .admin-header a:hover, .admin-header button:hover {
+      background: #fff; border-color: var(--color-lavender);
+    }
+
+    .admin-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-pill);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .admin-tab {
+      flex: 1;
+      min-width: 88px;
+      padding: 10px 6px;
+      border: none;
+      border-radius: var(--radius-pill);
+      background: transparent;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-text-soft);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .25s ease;
+    }
+    .admin-tab.active {
+      background: var(--gradient-button);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(255, 143, 184, .35);
+    }
+
+    .admin-pane { display: none; }
+    .admin-pane.active { display: block; }
+
+    .panel { padding: 26px; margin-bottom: 18px; }
+    .panel h2 { font-size: 17px; margin-bottom: 16px; }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .row input, .row textarea {
+      padding: 10px 16px;
+      border-radius: 18px;
+      border: 1.5px solid var(--color-border);
+      background: rgba(255, 255, 255, .9);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .row textarea { border-radius: 16px; width: 100%; min-height: 84px; resize: vertical; }
+    .row input:focus, .row textarea:focus {
+      outline: none; border-color: var(--color-lavender);
+      box-shadow: 0 0 0 3px rgba(201, 167, 255, .18);
+    }
+    .row input[type=number] { width: 100px; }
+
+    .btn {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 999px;
+      background: var(--gradient-button);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(255, 143, 184, .35);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(255, 143, 184, .45); }
+    .btn.ghost {
+      background: rgba(255,255,255,.8);
+      color: var(--color-periwinkle);
+      box-shadow: none;
+      border: 1.5px solid var(--color-border);
+    }
+    .btn.danger { background: linear-gradient(135deg, #ff8a8a, #ff6b9d); }
+    .btn.mini { padding: 6px 12px; font-size: 12.5px; box-shadow: none; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th, td {
+      padding: 11px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: middle;
+    }
+    th { color: var(--color-text-faint); font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+    td.mono { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+    tr:last-child td { border-bottom: none; }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .tag.ok   { color: #2e9e6b; background: #e3f7ee; }
+    .tag.off  { color: #c4566a; background: #fde8ee; }
+    .tag.new  { color: var(--color-periwinkle); background: var(--color-blush); }
+    .tag.gold { color: #b07a1a; background: #fdf1d7; }
+    .tag.grey { color: #7a7a8c; background: #eeeef2; }
+
+    .key-text { user-select: all; cursor: copy; }
+    .muted { color: var(--color-text-faint); font-size: 12.5px; }
+    .expired { color: #c4566a !important; font-weight: 600; }
+
+    /* 概览卡片 */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+    }
+    .stat-card {
+      padding: 22px 18px;
+      text-align: center;
+    }
+    .stat-card .num {
+      font-size: 32px;
+      font-weight: 800;
+      background: var(--gradient-button);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+    .stat-card .lab { font-size: 13px; color: var(--color-text-faint); margin-top: 4px; }
+
+    /* 续期小弹层 */
+    .pop-menu {
+      position: fixed;
+      z-index: 200;
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 14px 40px rgba(120, 80, 150, .22);
+    }
+    .pop-menu p { font-size: 12.5px; color: var(--color-text-faint); margin: 2px 6px 8px; }
+    .pop-menu button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 7px 14px;
+      margin-bottom: 3px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--color-text);
+    }
+    .pop-menu button:hover { background: var(--color-blush); color: var(--color-periwinkle); }
+    .pop-menu button.danger:hover { background: #fde8ee; color: #c4566a; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 34px;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(60, 45, 75, .92);
+      color: #fff;
+      padding: 12px 26px;
+      border-radius: 999px;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all .3s ease;
+      z-index: 99;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 640px) {
+      .panel { padding: 18px 14px; }
+      th, td { padding: 9px 6px; font-size: 12.5px; }
+      .hide-sm { display: none; }
+      .admin-tab { font-size: 12.5px; min-width: 72px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="aurora-bg" aria-hidden="true"></div>
+
+  <div class="admin-wrap">
+    <header class="admin-header">
+      <h1>🌸 管理后台 <span class="muted" id="whoami" style="font-size:13px;font-weight:400"></span></h1>
+      <div class="links">
+        <a href="lolsp.html">← 返回私密入口</a>
+        <button id="btn-logout">退出登录</button>
+      </div>
+    </header>
+
+    <div class="admin-tabs" id="admin-tabs"></div>
+
+    <!-- 概览 -->
+    <section class="admin-pane" id="pane-dashboard">
+      <div class="glass-card panel">
+        <h2>📊 数据概览 <button class="btn ghost mini" id="btn-refresh-stats" style="float:right">刷新</button></h2>
+        <div class="stat-grid" id="stat-grid"></div>
+      </div>
+    </section>
+
+    <!-- 卡密（仅超管） -->
+    <section class="admin-pane" id="pane-cards">
+      <div class="glass-card panel">
+        <h2>🎫 生成新卡密</h2>
+        <div class="row">
+          <input type="number" id="card-count" value="1" min="1" max="50" title="数量" />
+          <input type="number" id="card-days" min="1" max="3650" placeholder="有效天数（空=永久）" style="width:170px" />
+          <input type="text" id="card-label" placeholder="备注（可选，如：9月批次）" style="min-width:180px" />
+          <button class="btn" id="btn-gen-card">生成</button>
+        </div>
+        <p class="muted">每次最多 50 张；格式 LOLSP-XXXX-XXXX-XXXX，已去除易混淆字符。</p>
+      </div>
+      <div class="glass-card panel">
+        <h2>📋 全部卡密 <span class="muted" id="card-stat"></span></h2>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>卡密（点击复制）</th><th>备注</th><th>有效期</th><th>状态</th>
+                <th class="hide-sm">创建时间</th><th class="hide-sm">首次使用</th><th class="hide-sm">使用 IP</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="card-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 管理员（仅超管） -->
+    <section class="admin-pane" id="pane-admins">
+      <div class="glass-card panel">
+        <h2>🛡️ 新建管理员</h2>
+        <div class="row">
+          <input type="text" id="adm-username" placeholder="账号（2-20位）" />
+          <input type="text" id="adm-password" placeholder="密码（至少6位）" />
+          <input type="number" id="adm-days" min="1" max="3650" placeholder="有效天数（空=永久）" style="width:170px" />
+          <button class="btn" id="btn-add-admin">添加管理员</button>
+        </div>
+        <p class="muted">新管理员默认<span style="color:#c4566a">无管理权限</span>（等同于普通用户），需要在下方点「授权」后才可以管理用户。</p>
+      </div>
+      <div class="glass-card panel">
+        <h2>🛡️ 管理员列表</h2>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>账号</th><th>角色</th><th>用户管理权</th><th>有效期</th><th>状态</th><th class="hide-sm">创建时间</th><th>操作</th></tr>
+            </thead>
+            <tbody id="adm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 用户（超管 + 被授权的管理员） -->
+    <section class="admin-pane" id="pane-users">
+      <div class="glass-card panel">
+        <h2>👤 新建用户</h2>
+        <div class="row">
+          <input type="text" id="acc-username" placeholder="账号（2-20位）" />
+          <input type="text" id="acc-password" placeholder="密码（至少6位）" />
+          <input type="number" id="acc-days" min="1" max="3650" placeholder="有效天数（空=永久）" style="width:170px" />
+          <button class="btn" id="btn-add-acc">添加用户</button>
+        </div>
+      </div>
+      <div class="glass-card panel">
+        <h2>👥 用户列表</h2>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>账号</th><th>有效期</th><th>状态</th><th class="hide-sm">创建时间</th><th>操作</th></tr>
+            </thead>
+            <tbody id="acc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 在线用户 -->
+    <section class="admin-pane" id="pane-online">
+      <div class="glass-card panel">
+        <h2>🟢 在线会话
+          <button class="btn ghost mini" id="btn-refresh-online" style="float:right">刷新</button>
+        </h2>
+        <p class="muted" style="margin-bottom:12px">可强制下线；对方下次操作即被登出。超级管理员不允许被下线。</p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>身份</th><th>方式</th><th>IP</th><th class="hide-sm">登录时间</th><th>剩余</th><th>操作</th></tr>
+            </thead>
+            <tbody id="online-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 日志 -->
+    <section class="admin-pane" id="pane-logs">
+      <div class="glass-card panel">
+        <h2>📜 最近 200 条记录
+          <button class="btn ghost mini" id="btn-refresh-logs" style="float:right">刷新</button>
+        </h2>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>时间</th><th>身份</th><th>行为</th><th class="hide-sm">详情</th><th>IP</th></tr></thead>
+            <tbody id="log-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 系统设置（仅超管） -->
+    <section class="admin-pane" id="pane-settings">
+      <div class="glass-card panel" style="max-width:560px">
+        <h2>⚙️ 系统设置</h2>
+        <p class="muted" style="margin-bottom:14px">普通用户 / 管理员 / 卡密的登录有效期（超级管理员永久有效，不受此限制）。改动只影响之后的新登录。</p>
+        <div class="row">
+          <strong style="font-size:14px;min-width:130px">登录有效时长</strong>
+          <input type="number" id="set-hours" min="0.5" max="720" step="0.5" />
+          <span class="muted">小时（0.5 ~ 720）</span>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <strong style="font-size:14px;min-width:130px">入口页公告</strong>
+          <textarea id="set-notice" maxlength="200" placeholder="显示在私密入口页顶部，留空则不显示（最多200字）"></textarea>
+        </div>
+        <button class="btn" id="btn-save-settings">保存设置</button>
+      </div>
+    </section>
+
+    <!-- 改密 -->
+    <section class="admin-pane" id="pane-password">
+      <div class="glass-card panel" style="max-width:480px">
+        <h2>🔑 修改我的密码</h2>
+        <div class="row" style="flex-direction:column;align-items:stretch">
+          <input type="password" id="my-old" placeholder="原密码" />
+          <input type="password" id="my-new" placeholder="新密码（至少 6 位）" />
+          <button class="btn" id="btn-change-pwd">确认修改</button>
+        </div>
+        <p class="muted">卡密登录无密码，此功能仅账号用户可用。</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function () {
+      'use strict';
+      var $ = function (id) { return document.getElementById(id); };
+      var toastEl = $('toast'), toastTimer;
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
+      }
+
+      function api(path, opts) {
+        opts = opts || {};
+        return fetch(path, {
+          method: opts.method || 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          body: opts.body ? JSON.stringify(opts.body) : undefined,
+        }).then(function (r) { return r.json(); });
+      }
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function pad(n) { return n < 10 ? '0' + n : '' + n; }
+      function fmtDate(ts) {
+        if (!ts) return '';
+        var d = new Date(ts * 1000);
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+          ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
+      function fmtExpire(ts) {
+        if (!ts) return '<span class="tag ok">永久</span>';
+        var d = new Date(ts * 1000), now = new Date();
+        var dayText = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        if (ts * 1000 < now.getTime()) return '<span class="expired">已到期<br>' + dayText + '</span>';
+        var days = Math.ceil((ts * 1000 - now.getTime()) / 86400000);
+        return '<span title="' + fmtDate(ts) + '">' + dayText +
+               '<br><span class="muted">剩 ' + days + ' 天</span></span>';
+      }
+      function fmtRemain(sec) {
+        if (sec > 300 * 86400) return '永久';
+        var d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600);
+        if (d > 0) return d + ' 天 ' + h + ' 小时';
+        var m = Math.floor((sec % 3600) / 60);
+        return h + ' 小时 ' + m + ' 分';
+      }
+
+      // ---- 角色与 Tab ----
+      var ME = null;
+      var TAB_DEFS = [
+        { key: 'dashboard', label: '数据概览', super: false },
+        { key: 'cards',     label: '卡密管理', super: true  },
+        { key: 'admins',    label: '管理员',   super: true  },
+        { key: 'users',     label: '用户管理', super: false },
+        { key: 'online',    label: '在线用户', super: false },
+        { key: 'logs',      label: '使用记录', super: false },
+        { key: 'settings',  label: '系统设置', super: true  },
+        { key: 'password',  label: '修改密码', super: false },
+      ];
+
+      var LOADERS = {
+        dashboard: loadStats,
+        cards: loadCards,
+        users: loadAccounts,
+        admins: loadAccounts,
+        online: loadSessions,
+        logs: loadLogs,
+        settings: loadSettings,
+      };
+
+      function buildTabs() {
+        var isSuper = ME.role === 'superadmin';
+        var tabs = TAB_DEFS.filter(function (t) { return isSuper || !t.super; });
+        $('admin-tabs').innerHTML = tabs.map(function (t, i) {
+          return '<button class="admin-tab' + (i === 0 ? ' active' : '') +
+                 '" data-pane="' + t.key + '">' + t.label + '</button>';
+        }).join('');
+        document.querySelectorAll('.admin-tab').forEach(function (tab) {
+          tab.addEventListener('click', function () {
+            document.querySelectorAll('.admin-tab').forEach(function (t) {
+              t.classList.toggle('active', t === tab);
+            });
+            document.querySelectorAll('.admin-pane').forEach(function (p) {
+              p.classList.toggle('active', p.id === 'pane-' + tab.dataset.pane);
+            });
+            var fn = LOADERS[tab.dataset.pane];
+            if (fn) fn();
+          });
+        });
+        document.getElementById('pane-' + tabs[0].key).classList.add('active');
+      }
+
+      // ---- 概览 ----
+      function loadStats() {
+        api('/api/admin/stats').then(function (d) {
+          if (!d.ok) return;
+          var s = d.stats;
+          var cards = [
+            { num: s.online, lab: '当前在线' },
+            { num: s.logins_today, lab: '今日登录次数' },
+            { num: s.users, lab: '普通用户' },
+          ];
+          if (s.admins !== undefined) {
+            cards.push({ num: s.admins, lab: '管理员' });
+            cards.push({ num: s.cards_total, lab: '卡密总数' });
+            cards.push({ num: s.cards_enabled + ' / ' + s.cards_used, lab: '有效 / 已使用' });
+          }
+          $('stat-grid').innerHTML = cards.map(function (c) {
+            return '<div class="glass-card stat-card"><div class="num">' + c.num +
+                   '</div><div class="lab">' + c.lab + '</div></div>';
+          }).join('');
+        });
+      }
+      $('btn-refresh-stats').addEventListener('click', loadStats);
+
+      // ---- 卡密 ----
+      function renderCards(cards) {
+        var enabled = cards.filter(function (c) { return c.enabled; }).length;
+        $('card-stat').textContent = '（共 ' + cards.length + ' 张，有效 ' + enabled + ' 张）';
+        $('card-tbody').innerHTML = cards.map(function (c) {
+          var nowTs = Date.now() / 1000;
+          var expTag;
+          if (!c.valid_until) expTag = '<span class="tag ok">永久</span>';
+          else if (c.valid_until < nowTs) expTag = '<span class="tag off">已过期</span>';
+          else expTag = '<span class="tag grey">' + fmtDate(c.valid_until).slice(0, 10) + '</span>';
+          var status = c.enabled
+            ? (c.used_at ? '<span class="tag ok">有效·已用</span>' : '<span class="tag new">有效·未用</span>')
+            : '<span class="tag off">已作废</span>';
+          return '<tr>' +
+            '<td class="mono key-text" title="点击复制" data-key="' + esc(c.card_key) + '">' + esc(c.card_key) + '</td>' +
+            '<td>' + esc(c.label) + '</td>' +
+            '<td>' + expTag + '</td>' +
+            '<td>' + status + '</td>' +
+            '<td class="hide-sm muted">' + esc(c.created_at) + '</td>' +
+            '<td class="hide-sm muted">' + esc(c.used_at || '—') + '</td>' +
+            '<td class="hide-sm muted mono">' + esc(c.used_ip || '—') + '</td>' +
+            '<td style="white-space:nowrap">' +
+              (c.enabled
+                ? '<button class="btn ghost mini" data-act="disable" data-id="' + c.id + '">作废</button> '
+                : '<button class="btn mini" data-act="enable" data-id="' + c.id + '">启用</button> ') +
+              '<button class="btn danger mini" data-act="delete" data-id="' + c.id + '">删除</button>' +
+            '</td></tr>';
+        }).join('');
+      }
+
+      function loadCards() {
+        api('/api/admin/cards').then(function (d) {
+          if (d.ok) renderCards(d.cards);
+        });
+      }
+
+      $('btn-gen-card').addEventListener('click', function () {
+        var count = parseInt($('card-count').value, 10) || 1;
+        api('/api/admin/cards', { method: 'POST',
+          body: {
+            count: count,
+            label: $('card-label').value,
+            valid_days: $('card-days').value || 0,
+          } })
+          .then(function (d) {
+            if (d.ok) {
+              toast('已生成 ' + d.cards.length + ' 张卡密');
+              $('card-label').value = '';
+              $('card-days').value = '';
+              loadCards();
+            } else { toast(d.message || '生成失败'); }
+          });
+      });
+
+      $('card-tbody').addEventListener('click', function (e) {
+        var keyEl = e.target.closest('.key-text');
+        if (keyEl) {
+          var k = keyEl.dataset.key;
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(k).then(function () { toast('已复制：' + k); });
+          } else { toast(k); }
+          return;
+        }
+        var btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        var act = btn.dataset.act;
+        if (act === 'delete' && !confirm('确定删除这张卡密？删除后无法恢复。')) return;
+        api('/api/admin/cards/' + btn.dataset.id, { method: 'POST', body: { action: act } })
+          .then(function (d) {
+            toast(d.ok ? '操作成功' : (d.message || '操作失败'));
+            loadCards();
+          });
+      });
+
+      // ---- 账号（管理员/用户共用接口，前端按角色拆分显示） ----
+      var allAccounts = [];
+
+      function loadAccounts() {
+        return api('/api/admin/accounts').then(function (d) {
+          if (d.ok) { allAccounts = d.accounts; renderAdmins(); renderUsers(); }
+        });
+      }
+
+      function expireBtn(a) {
+        return '<button class="btn ghost mini" data-act="expire" data-id="' + a.id +
+               '" data-name="' + esc(a.username) + '">⏳ 时长</button>';
+      }
+
+      function accOps(a) {
+        return expireBtn(a) + ' ' +
+               '<button class="btn ghost mini" data-act="reset" data-id="' + a.id +
+               '" data-name="' + esc(a.username) + '">重置密码</button> ' +
+               (a.enabled
+                 ? '<button class="btn danger mini" data-act="disable" data-id="' + a.id + '">停用</button>'
+                 : '<button class="btn mini" data-act="enable" data-id="' + a.id + '">启用</button>');
+      }
+
+      function renderAdmins() {
+        var rows = allAccounts.filter(function (a) {
+          return a.role === 'admin' || a.role === 'superadmin';
+        });
+        $('adm-tbody').innerHTML = rows.map(function (a) {
+          var isSuper = a.role === 'superadmin';
+          var roleTag = isSuper
+            ? '<span class="tag gold">超级管理员</span>'
+            : '<span class="tag new">管理员</span>';
+          var permTag = isSuper
+            ? '<span class="tag gold">全部权限</span>'
+            : (a.can_manage_users
+                ? '<span class="tag ok">已授权</span>'
+                : '<span class="tag off">未授权</span>');
+          var ops;
+          if (isSuper) {
+            ops = '<span class="muted">—</span>';
+          } else {
+            ops = (a.can_manage_users
+                    ? '<button class="btn ghost mini" data-act="revoke" data-id="' + a.id + '">收回权限</button> '
+                    : '<button class="btn mini" data-act="grant" data-id="' + a.id + '">授权</button> ') +
+                  accOps(a);
+          }
+          return '<tr><td class="mono">' + esc(a.username) + '</td>' +
+                 '<td>' + roleTag + '</td><td>' + permTag + '</td>' +
+                 '<td>' + (isSuper ? '<span class="tag gold">永久</span>' : fmtExpire(a.expires_at)) + '</td>' +
+                 '<td>' + (a.enabled ? '<span class="tag ok">启用</span>' : '<span class="tag off">停用</span>') + '</td>' +
+                 '<td class="hide-sm muted">' + esc(a.created_at) + '</td>' +
+                 '<td style="white-space:nowrap">' + ops + '</td></tr>';
+        }).join('');
+      }
+
+      function renderUsers() {
+        var rows = allAccounts.filter(function (a) { return a.role === 'user'; });
+        $('acc-tbody').innerHTML = rows.map(function (a) {
+          return '<tr><td class="mono">' + esc(a.username) + '</td>' +
+                 '<td>' + fmtExpire(a.expires_at) + '</td>' +
+                 '<td>' + (a.enabled ? '<span class="tag ok">启用</span>' : '<span class="tag off">停用</span>') + '</td>' +
+                 '<td class="hide-sm muted">' + esc(a.created_at) + '</td>' +
+                 '<td style="white-space:nowrap">' + accOps(a) + '</td></tr>';
+        }).join('');
+      }
+
+      function addAccount(usernameEl, passwordEl, daysEl, role) {
+        api('/api/admin/accounts', { method: 'POST', body: {
+          username: $(usernameEl).value, password: $(passwordEl).value, role: role,
+          expires_days: $(daysEl).value || 0,
+        } }).then(function (d) {
+          toast(d.ok ? '已添加' : (d.message || '添加失败'));
+          if (d.ok) {
+            $(usernameEl).value = ''; $(passwordEl).value = ''; $(daysEl).value = '';
+            loadAccounts();
+          }
+        });
+      }
+      $('btn-add-admin').addEventListener('click', function () {
+        addAccount('adm-username', 'adm-password', 'adm-days', 'admin');
+      });
+      $('btn-add-acc').addEventListener('click', function () {
+        addAccount('acc-username', 'acc-password', 'acc-days', 'user');
+      });
+
+      // 续期弹层
+      function closeExpireMenu() {
+        var old = $('expire-menu');
+        if (old) old.remove();
+      }
+      function showExpireMenu(btn) {
+        closeExpireMenu();
+        var id = btn.dataset.id, name = btn.dataset.name;
+        var m = document.createElement('div');
+        m.className = 'pop-menu';
+        m.id = 'expire-menu';
+        m.innerHTML = '<p>给「' + esc(name) + '」设置有效期</p>' +
+          '<button data-days="7">从现在起 7 天</button>' +
+          '<button data-days="30">从现在起 30 天</button>' +
+          '<button data-days="90">从现在起 90 天</button>' +
+          '<button data-days="365">从现在起 1 年</button>' +
+          '<button class="danger" data-days="0">设为永久有效</button>';
+        document.body.appendChild(m);
+        var r = btn.getBoundingClientRect();
+        var left = Math.min(r.left, window.innerWidth - 200);
+        m.style.left = Math.max(8, left) + 'px';
+        m.style.top = Math.min(r.bottom + 6, window.innerHeight - 230) + 'px';
+        m.addEventListener('click', function (ev) {
+          var b = ev.target.closest('button[data-days]');
+          if (!b) return;
+          var days = parseInt(b.dataset.days, 10);
+          api('/api/admin/accounts/' + id, { method: 'POST',
+            body: { action: 'expire', days: days } })
+            .then(function (d) {
+              toast(d.ok ? '已更新有效期' : (d.message || '操作失败'));
+              closeExpireMenu();
+              loadAccounts();
+            });
+        });
+      }
+      document.addEventListener('click', function (e) {
+        if (e.target.closest('#expire-menu') || e.target.closest('[data-act="expire"]')) return;
+        closeExpireMenu();
+      });
+
+      function onAccTableClick(e) {
+        var btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        var act = btn.dataset.act;
+        if (act === 'expire') { showExpireMenu(btn); return; }
+        var body = { action: act };
+        if (act === 'reset') {
+          var pwd = prompt('为账号「' + btn.dataset.name + '」设置新密码（至少 6 位）：');
+          if (!pwd) return;
+          body.password = pwd;
+        }
+        if (act === 'disable' && !confirm('确定停用该账号？其登录会话会立即失效。')) return;
+        if (act === 'revoke' && !confirm('收回该管理员的用户管理权限？收回后等同于普通用户。')) return;
+        api('/api/admin/accounts/' + btn.dataset.id, { method: 'POST', body: body })
+          .then(function (d) {
+            toast(d.ok ? '操作成功' : (d.message || '操作失败'));
+            loadAccounts();
+          });
+      }
+      $('adm-tbody').addEventListener('click', onAccTableClick);
+      $('acc-tbody').addEventListener('click', onAccTableClick);
+
+      // ---- 在线用户 ----
+      function loadSessions() {
+        api('/api/admin/sessions').then(function (d) {
+          if (!d.ok) return;
+          var roleName = { superadmin: '超管', admin: '管理员', user: '用户', card: '卡密' };
+          if (!d.sessions.length) {
+            $('online-tbody').innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">暂无在线会话</td></tr>';
+            return;
+          }
+          $('online-tbody').innerHTML = d.sessions.map(function (s) {
+            var tagClass = { superadmin: 'gold', admin: 'new', user: 'ok', card: 'grey' }[s.role] || 'grey';
+            return '<tr><td class="mono">' + esc(s.identity) + '</td>' +
+              '<td><span class="tag ' + tagClass + '">' + (roleName[s.role] || s.role) + '</span></td>' +
+              '<td class="mono muted">' + esc(s.ip || '') + '</td>' +
+              '<td class="hide-sm muted" style="white-space:nowrap">' + esc(s.created_at) + '</td>' +
+              '<td style="white-space:nowrap">' + fmtRemain(s.remain) + '</td>' +
+              '<td>' + (s.is_self
+                ? '<span class="muted">当前登录</span>'
+                : '<button class="btn danger mini" data-act="kick" data-token="' + esc(s.token) + '">强制下线</button>') +
+              '</td></tr>';
+          }).join('');
+        });
+      }
+      $('btn-refresh-online').addEventListener('click', loadSessions);
+      $('online-tbody').addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-act="kick"]');
+        if (!btn) return;
+        if (!confirm('确定强制该会话下线？对方下次操作即被登出。')) return;
+        api('/api/admin/sessions/kick', { method: 'POST', body: { token: btn.dataset.token } })
+          .then(function (d) {
+            toast(d.ok ? '已下线' : (d.message || '操作失败'));
+            loadSessions();
+          });
+      });
+
+      // ---- 日志 ----
+      function loadLogs() {
+        api('/api/admin/logs').then(function (d) {
+          if (!d.ok) return;
+          var labels = {
+            login: '登录', logout: '退出', login_fail: '登录失败',
+            change_password: '改密码',
+            card_enable: '启用卡密', card_disable: '作废卡密', card_delete: '删除卡密',
+            account_create: '新建账号', account_enable: '启用账号',
+            account_disable: '停用账号', account_reset: '重置密码',
+            account_grant: '授予管理权', account_revoke: '收回管理权',
+            account_expire: '调整有效期', session_kick: '强制下线',
+            settings_update: '修改系统设置',
+          };
+          $('log-tbody').innerHTML = d.logs.map(function (l) {
+            var isFail = l.action === 'login_fail';
+            return '<tr><td class="muted" style="white-space:nowrap">' + esc(l.ts) + '</td>' +
+              '<td class="mono">' + esc(l.identity) + '</td>' +
+              '<td' + (isFail ? ' class="expired"' : '') + '>' + esc(labels[l.action] || l.action) + '</td>' +
+              '<td class="hide-sm muted">' + esc(l.detail || '') + '</td>' +
+              '<td class="mono muted">' + esc(l.ip || '') + '</td></tr>';
+          }).join('');
+        });
+      }
+      $('btn-refresh-logs').addEventListener('click', loadLogs);
+
+      // ---- 系统设置 ----
+      function loadSettings() {
+        api('/api/admin/settings').then(function (d) {
+          if (!d.ok) return;
+          $('set-hours').value = d.settings.session_hours;
+          $('set-notice').value = d.settings.notice || '';
+        });
+      }
+      $('btn-save-settings').addEventListener('click', function () {
+        api('/api/admin/settings', { method: 'POST', body: {
+          session_hours: $('set-hours').value,
+          notice: $('set-notice').value,
+        } }).then(function (d) {
+          toast(d.ok ? '设置已保存' : (d.message || '保存失败'));
+        });
+      });
+
+      // ---- 改自己密码 ----
+      $('btn-change-pwd').addEventListener('click', function () {
+        api('/api/account/password', { method: 'POST',
+          body: { old: $('my-old').value, new: $('my-new').value } })
+          .then(function (d) {
+            toast(d.ok ? '密码已修改' : (d.message || '修改失败'));
+            if (d.ok) { $('my-old').value = ''; $('my-new').value = ''; }
+          });
+      });
+
+      // ---- 登出 ----
+      $('btn-logout').addEventListener('click', function () {
+        api('/api/logout', { method: 'POST' }).then(function () {
+          location.href = 'lolsp-login.html';
+        });
+      });
+
+      // ---- 初始化：必须是超管或被授权的管理员 ----
+      api('/api/me').then(function (d) {
+        if (!d.ok) { location.replace('lolsp-login.html'); return; }
+        if (!d.can_manage) { location.replace('lolsp.html'); return; }
+        ME = d;
+        var roleName = { superadmin: '超级管理员', admin: '管理员', user: '用户' }[d.role] || d.role;
+        $('whoami').textContent = '当前：' + d.display + '（' + roleName + '）';
+        buildTabs();
+        loadStats();
+      });
+    })();
+  </script>
+</body>
+
+</html>

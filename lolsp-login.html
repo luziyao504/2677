@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>访问验证 · 少女の导航站</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* 登录页专属样式 */
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 36px 34px;
+      position: relative;
+    }
+
+    .auth-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      background: var(--gradient-button);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      box-shadow: 0 10px 30px rgba(255, 143, 184, 0.4);
+    }
+
+    .auth-title {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .auth-sub {
+      text-align: center;
+      font-size: 14px;
+      color: var(--color-text-soft);
+      margin-bottom: 26px;
+      line-height: 1.7;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-pill);
+      margin-bottom: 24px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 9px 0;
+      border: none;
+      border-radius: var(--radius-pill);
+      background: transparent;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-soft);
+      transition: all 0.25s ease;
+    }
+
+    .auth-tab.active {
+      background: var(--gradient-button);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(255, 143, 184, 0.35);
+    }
+
+    .auth-pane { display: none; }
+    .auth-pane.active { display: block; }
+
+    .auth-field {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid var(--color-border);
+      background: rgba(255, 255, 255, 0.85);
+      font-size: 14.5px;
+      font-family: inherit;
+      color: var(--color-text);
+      margin-bottom: 12px;
+      letter-spacing: 0.02em;
+    }
+
+    .auth-field:focus {
+      outline: none;
+      border-color: var(--color-lavender);
+      box-shadow: 0 0 0 3px rgba(201, 167, 255, 0.18);
+    }
+
+    .auth-submit {
+      width: 100%;
+      padding: 13px 32px;
+      margin-top: 4px;
+      border: none;
+      border-radius: var(--radius-pill);
+      background: var(--gradient-button);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      box-shadow: 0 10px 30px rgba(255, 143, 184, 0.4);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .auth-submit:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(255, 143, 184, 0.5); }
+    .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .auth-error {
+      min-height: 20px;
+      margin-top: 12px;
+      font-size: 13.5px;
+      color: var(--color-pink-accent);
+      text-align: center;
+    }
+
+    .auth-back {
+      display: block;
+      text-align: center;
+      margin-top: 18px;
+      font-size: 13.5px;
+      color: var(--color-text-faint);
+    }
+    .auth-back:hover { color: var(--color-periwinkle); }
+  </style>
+
+  <!-- 已登录则直接进 lolsp，避免登录页闪现 -->
+  <script src="lolsp-auth.js"></script>
+  <script>
+    if (window.LOLSP_AUTH.getSession()) {
+      location.replace('lolsp.html');
+    }
+  </script>
+</head>
+
+<body>
+  <div class="aurora-bg" aria-hidden="true"></div>
+
+  <main class="auth-page">
+    <div class="glass-card auth-card">
+      <div class="auth-icon" aria-hidden="true">🔐</div>
+      <h1 class="auth-title">访问验证</h1>
+      <p class="auth-sub">这里是小玲的私密角落<br />请使用账号或卡密完成验证后进入</p>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" data-tab="password" role="tab">账号密码</button>
+        <button type="button" class="auth-tab" data-tab="card" role="tab">卡密验证</button>
+      </div>
+
+      <!-- 账号密码 -->
+      <form class="auth-pane active" id="pane-password" autocomplete="off">
+        <input type="text" class="auth-field" id="login-username" placeholder="账号" autocomplete="username" />
+        <input type="password" class="auth-field" id="login-password" placeholder="密码" autocomplete="current-password" />
+        <button type="submit" class="auth-submit" id="btn-password">登 录</button>
+      </form>
+
+      <!-- 卡密 -->
+      <form class="auth-pane" id="pane-card" autocomplete="off">
+        <input type="text" class="auth-field" id="login-card" placeholder="请输入卡密，如 LOLSP-XXXX-XXXX-XXXX"
+               style="letter-spacing:0.06em" />
+        <button type="submit" class="auth-submit" id="btn-card">验 证 进 入</button>
+      </form>
+
+      <div class="auth-error" id="auth-error" role="alert" aria-live="polite"></div>
+
+      <a class="auth-back" href="index.html#/">← 返回导航站首页</a>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+      var AUTH = window.LOLSP_AUTH;
+
+      var tabs = document.querySelectorAll('.auth-tab');
+      var panes = {
+        password: document.getElementById('pane-password'),
+        card: document.getElementById('pane-card'),
+      };
+      var errorBox = document.getElementById('auth-error');
+      var activeTab = 'password';
+
+      function showError(msg) {
+        errorBox.textContent = msg || '';
+      }
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          activeTab = tab.dataset.tab;
+          tabs.forEach(function (t) { t.classList.toggle('active', t === tab); });
+          Object.keys(panes).forEach(function (key) {
+            panes[key].classList.toggle('active', key === activeTab);
+          });
+          showError('');
+        });
+      });
+
+      function pass(promise) {
+        promise.then(function (result) {
+          if (result.ok) {
+            errorBox.style.color = 'var(--color-periwinkle)';
+            showError('验证成功，正在进入…');
+            var btn = activeTab === 'password'
+              ? document.getElementById('btn-password')
+              : document.getElementById('btn-card');
+            btn.disabled = true;
+            // 极短延迟让用户看到成功反馈
+            setTimeout(function () { location.replace('lolsp.html'); }, 350);
+          } else {
+            errorBox.style.color = '';
+            showError(result.message);
+          }
+        }).catch(function () {
+          errorBox.style.color = '';
+          showError('网络异常，请稍后重试');
+        });
+      }
+
+      panes.password.addEventListener('submit', function (e) {
+        e.preventDefault();
+        showError('');
+        pass(AUTH.loginByPassword(
+          document.getElementById('login-username').value,
+          document.getElementById('login-password').value
+        ));
+      });
+
+      panes.card.addEventListener('submit', function (e) {
+        e.preventDefault();
+        showError('');
+        pass(AUTH.loginByCard(document.getElementById('login-card').value));
+      });
+    })();
+  </script>
+</body>
+
+</html>

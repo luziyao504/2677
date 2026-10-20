@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lolsp · 私密入口</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- 登录态由后端 Cookie 守卫；未登录时服务器已 302 到登录页 -->
+  <style>
+    html.js-loading body { visibility: hidden; }
+
+    .lolsp-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lolsp-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--color-border);
+      background: rgba(255, 248, 251, 0.7);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .lolsp-bar .bar-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lolsp-bar .bar-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: var(--color-text-soft);
+    }
+
+    .bar-badge {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-periwinkle);
+      background: var(--color-blush);
+      padding: 3px 12px;
+      border-radius: 999px;
+    }
+
+    .bar-admin {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--color-periwinkle);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1.5px solid var(--color-border);
+      background: rgba(255, 255, 255, .7);
+      transition: all .25s ease;
+    }
+    .bar-admin:hover { background: #fff; border-color: var(--color-lavender); }
+
+    .btn-logout {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1.5px solid var(--color-border);
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--color-periwinkle);
+      font-size: 13.5px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.25s ease;
+    }
+    .btn-logout:hover { background: #fff; border-color: var(--color-lavender); }
+
+    .lolsp-main {
+      flex: 1;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      align-content: center;
+      flex-wrap: wrap;
+      gap: 40px;
+      padding: 60px 24px;
+    }
+
+    #lolsp-links p { display: inline-block; margin: 0; }
+
+    #lolsp-links a {
+      display: block;
+      width: 130px;
+      padding: 34px 0;
+      text-decoration: none;
+      text-align: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: 0.05em;
+      border-radius: 20px;
+      box-shadow: var(--shadow-soft);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #lolsp-links a:hover {
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: var(--shadow-lifted);
+    }
+
+    #lsp { background-color: cadetblue; }
+    #elqq { background-color: rgb(255, 196, 0); }
+    #mt { background-color: rgb(227, 156, 195); }
+
+    .lolsp-notice {
+      display: none;
+      margin: 16px auto 0;
+      max-width: 800px;
+      padding: 12px 20px;
+      border-radius: 16px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #7a5a10;
+      background: #fdf1d7;
+      border: 1px solid #f0d79a;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .acc-expire.soon { color: #d97706; font-weight: 600; }
+  </style>
+  <script>document.documentElement.classList.add('js-loading');</script>
+</head>
+
+<body>
+  <div class="aurora-bg" aria-hidden="true"></div>
+
+  <div class="lolsp-page">
+    <!-- 顶栏：身份、有效期、后台、登出 -->
+    <header class="lolsp-bar">
+      <div class="bar-title">
+        <span aria-hidden="true">🔐</span>
+        <span>lolsp · 私密入口</span>
+      </div>
+      <div class="bar-meta">
+        <span class="bar-badge" id="lolsp-identity">—</span>
+        <span id="lolsp-expire">校验中…</span>
+        <span class="acc-expire" id="lolsp-acc-expire"></span>
+        <a class="bar-admin" id="lolsp-admin" href="admin.html" style="display:none">⚙ 管理后台</a>
+        <button type="button" class="btn-logout" id="lolsp-logout">退出登录</button>
+      </div>
+    </header>
+
+    <div class="lolsp-notice" id="lolsp-notice"></div>
+
+    <!-- 受保护链接：登录态确认后由后端数据注入（href 为 /sp/ 反代地址） -->
+    <main class="lolsp-main">
+      <div id="lolsp-links"></div>
+    </main>
+  </div>
+
+  <script src="lolsp-auth.js"></script>
+  <script>
+    (function () {
+      'use strict';
+      var AUTH = window.LOLSP_AUTH;
+
+      function fmtExpire(sec) {
+        if (sec > 365 * 24 * 3600) return '登录永久有效';
+        var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+        return '登录剩余 ' + h + ' 小时 ' + m + ' 分钟';
+      }
+
+      function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+      // 账号/卡密本身的有效期（区别于每次登录的会话时长）
+      function renderAccountExpire(ts) {
+        var el = document.getElementById('lolsp-acc-expire');
+        if (!ts) { el.textContent = ''; el.classList.remove('soon'); return; }
+        var d = new Date(ts * 1000);
+        var days = Math.ceil((ts * 1000 - Date.now()) / 86400000);
+        var text = '账号有效期至 ' + d.getFullYear() + '-' + pad(d.getMonth() + 1) +
+          '-' + pad(d.getDate()) + '（剩 ' + days + ' 天）';
+        el.textContent = text;
+        el.classList.toggle('soon', days <= 7);
+      }
+
+      AUTH.me().then(function (s) {
+        document.documentElement.classList.remove('js-loading');
+        if (!s) { location.replace('lolsp-login.html'); return; }
+
+        // 注入反代链接（浏览器永远看不到真实 IP/端口）
+        document.getElementById('lolsp-links').innerHTML = s.links.map(function (l) {
+          return '<p><a id="' + l.id + '" href="' + l.href + '" target="_blank" rel="noreferrer">' +
+            l.name + '</a></p>';
+        }).join('');
+
+        document.getElementById('lolsp-identity').textContent =
+          (s.method === 'card' ? '卡密 ' : '账号 ') + s.display;
+        document.getElementById('lolsp-expire').textContent = fmtExpire(s.expires_in);
+        renderAccountExpire(s.account_expires_at);
+        var noticeEl = document.getElementById('lolsp-notice');
+        if (s.notice) { noticeEl.textContent = s.notice; noticeEl.style.display = 'block'; }
+        if (s.is_admin) document.getElementById('lolsp-admin').style.display = '';
+
+        setInterval(function () {
+          AUTH.me().then(function (cur) {
+            if (!cur) { location.replace('lolsp-login.html'); return; }
+            document.getElementById('lolsp-expire').textContent = fmtExpire(cur.expires_in);
+            renderAccountExpire(cur.account_expires_at);
+          });
+        }, 60000);
+      });
+
+      document.getElementById('lolsp-logout').addEventListener('click', function () {
+        AUTH.logout().then(function () { location.replace('lolsp-login.html'); });
+      });
+    })();
+  </script>
+</body>
+
+</html>
